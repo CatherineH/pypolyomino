@@ -1,5 +1,9 @@
 # hexsol.py  - a translation of Karl Dahlke's polyomino packing program to python
+# not for commercial use
 from argparse import ArgumentParser
+from collections import defaultdict
+
+from constraint import Problem
 from shapely.ops import cascaded_union
 from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon
 from svgwrite import Drawing
@@ -222,6 +226,8 @@ def output_to_svg(sol):
         "darkcyan",
         "darkgoldenrod"
     ]
+    pieces = []
+
     for piece_index, loc in solution:
         piece_type = shapes[piece_index][0]
         polygons = []
@@ -235,11 +241,29 @@ def output_to_svg(sol):
             rect_points.append((square_size * row, square_size * (col + 1)))
             polygons.append(ShapelyPolygon(rect_points))
         polygon = cascaded_union(polygons)
-        piece_points = polygon.buffer(-margin).exterior.coords
+        pieces.append(polygon)
+
+    adjacency_graph = defaultdict(list)
+    # get a coloring for the shapes solving the four color problem as a CSP
+    problem = Problem()
+    for i in range(len(pieces)):
+        problem.addVariable(i, [0, 1, 2, 3])
+        for j in range(len(pieces)):
+            if i == j:
+                continue
+            if pieces[i].intersects(pieces[j]):
+                problem.addConstraint(lambda x, y: x != y, (i, j))
+                #adjacency_graph[i].append(j)
+    # there should always be at least one solution
+    coloring_solution = problem.getSolution()
+    for i,piece in enumerate(pieces):
+        piece_points = piece.buffer(-margin).exterior.coords
         d = f"M {piece_points[0][0]} {piece_points[0][1]} "
-        for x,y in piece_points[1:]:
+        for x, y in piece_points[1:]:
             d += f"L {x} {y} "
-        drawing.add(Path(d=d, fill=colors[piece_type % len(colors)]))
+        drawing.add(Path(d=d, fill=colors[int(coloring_solution[i])]))
+
+
     drawing.save(pretty=2)
 
 def test(loc, pattern):
