@@ -92,6 +92,9 @@ class Board(object):
         col = board_index % self.w2
         return row, col
 
+    def board_row_col_to_index(self, row, col):
+        return self.w2*row + col
+
     def print_board(self):
         for col in range(1, self.w1):
             for row in range(1, self.l1):
@@ -129,26 +132,58 @@ class Board(object):
                 return i
         return None
 
+    def board_has_holes(self):
+        for i in range(self.w2 + 1, self.w2 * self.l1 - 1):
+            if self.board[i] is None:
+                row, col = self.board_index_to_row_col(i)
+                neighbors = []
+                #neighbors.append(self.board[self.board_row_col_to_index(row + 1, col-1)])
+                neighbors.append(self.board[self.board_row_col_to_index(row + 1, col)])
+                #neighbors.append(self.board[self.board_row_col_to_index(row + 1, col+1)])
+                #neighbors.append(self.board[self.board_row_col_to_index(row - 1, col-1)])
+                neighbors.append(self.board[self.board_row_col_to_index(row - 1, col)])
+                #neighbors.append(self.board[self.board_row_col_to_index(row - 1, col+1)])
+                neighbors.append(self.board[self.board_row_col_to_index(row, col-1)])
+                neighbors.append(self.board[self.board_row_col_to_index(row, col+1)])
+                if all(neighbors):
+                    #print("has hole", neighbors, row, col)
+                    return 0
+        return 1
+
+    def is_hole(self, loc):
+        if self.board[loc] != None:
+            return 1
+        row, col = self.board_index_to_row_col(loc)
+        neighbors = []
+        neighbors.append(self.board[self.board_row_col_to_index(row + 1, col)])
+        neighbors.append(self.board[self.board_row_col_to_index(row - 1, col)])
+        neighbors.append(self.board[self.board_row_col_to_index(row, col - 1)])
+        neighbors.append(self.board[self.board_row_col_to_index(row, col + 1)])
+        if all(neighbors):
+            return 0
+        return 1
+
     def test(self, loc, pattern):
         piece = self.shapes[pattern][0]
         if self.used[piece] and self.unique:
             return 0
-        b = self.board[loc:]
         for shape_loc in self.shapes[pattern][1:]:
-            if b[shape_loc] is not None:
-                #if loc == 34 and pattern == 1:
-                #    print("testing", shape_loc, b[shape_loc])
+            if self.board[loc+shape_loc] is not None:
                 return 0
+        # we also want to make sure that the board does not contain any empty islands
         return 1
 
-def rebuild_shapes(board_object):
+
+def rebuild_shapes(board_object, margin=True):
     for shape in board_object.shapes:
         for j in range(1, len(shape)):
             k = shape[j]
-            k += 3
+            if margin:
+                k += 3
             row = int(k/8)
             col = k % 8
-            col -= 3
+            if margin:
+                col -= 3
             k = board_object.w2*row + col
             shape[j] = k
 
