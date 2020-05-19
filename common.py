@@ -9,14 +9,16 @@ class Board(object):
     """
     holder object so that global variables do not need to be used
     """
+
     def __init__(self, width, length, shapes, unique=True):
         self.shapes = shapes
         # if True, there cannot be more than one copy of a piece on a board
         self.unique = unique
         # add one square of margin for the edges of the board - not sure this is necessary,
         # but it might provide a speedup
-        self.l1 = length + 1 # bottom margin of 1 cube
-        self.w1 = width + 1 # right margin of 1 cube
+        self.width = width
+        self.l1 = length + 1  # bottom margin of 1 cube
+        self.w1 = width + 1  # right margin of 1 cube
         self.l2 = length + 2
         self.w2 = width + 2
         self.board = [None for _ in range(0, self.w2 * self.l2)]
@@ -76,14 +78,14 @@ class Board(object):
         """
         for i in range(1, self.w1):
             if self.board[5 * self.w2 + i] == self.board[
-                                6 * self.w2 + i]:
+                6 * self.w2 + i]:
                 return 0
             return 1
 
     def print_board_locations(self):
         for col in range(1, self.w1):
             for row in range(1, self.l1):
-                print(str(self.w2 * row + col)+ ",", end="")
+                print(str(self.w2 * row + col) + ",", end="")
             print('')
         print()
 
@@ -93,7 +95,7 @@ class Board(object):
         return row, col
 
     def board_row_col_to_index(self, row, col):
-        return self.w2*row + col
+        return self.w2 * row + col
 
     def print_board(self):
         for col in range(1, self.w1):
@@ -137,16 +139,16 @@ class Board(object):
             if self.board[i] is None:
                 row, col = self.board_index_to_row_col(i)
                 neighbors = []
-                #neighbors.append(self.board[self.board_row_col_to_index(row + 1, col-1)])
+                # neighbors.append(self.board[self.board_row_col_to_index(row + 1, col-1)])
                 neighbors.append(self.board[self.board_row_col_to_index(row + 1, col)])
-                #neighbors.append(self.board[self.board_row_col_to_index(row + 1, col+1)])
-                #neighbors.append(self.board[self.board_row_col_to_index(row - 1, col-1)])
+                # neighbors.append(self.board[self.board_row_col_to_index(row + 1, col+1)])
+                # neighbors.append(self.board[self.board_row_col_to_index(row - 1, col-1)])
                 neighbors.append(self.board[self.board_row_col_to_index(row - 1, col)])
-                #neighbors.append(self.board[self.board_row_col_to_index(row - 1, col+1)])
-                neighbors.append(self.board[self.board_row_col_to_index(row, col-1)])
-                neighbors.append(self.board[self.board_row_col_to_index(row, col+1)])
+                # neighbors.append(self.board[self.board_row_col_to_index(row - 1, col+1)])
+                neighbors.append(self.board[self.board_row_col_to_index(row, col - 1)])
+                neighbors.append(self.board[self.board_row_col_to_index(row, col + 1)])
                 if all(neighbors):
-                    #print("has hole", neighbors, row, col)
+                    # print("has hole", neighbors, row, col)
                     return 0
         return 1
 
@@ -168,7 +170,7 @@ class Board(object):
         if self.used[piece] and self.unique:
             return 0
         for shape_loc in self.shapes[pattern][1:]:
-            if self.board[loc+shape_loc] is not None:
+            if self.board[loc + shape_loc] is not None:
                 return 0
         # we also want to make sure that the board does not contain any empty islands
         return 1
@@ -180,18 +182,18 @@ def rebuild_shapes(board_object, margin=True):
             k = shape[j]
             if margin:
                 k += 3
-            row = int(k/8)
+            row = int(k / 8)
             col = k % 8
             if margin:
                 col -= 3
-            k = board_object.w2*row + col
+            k = board_object.w2 * row + col
             shape[j] = k
 
 
 def output_to_svg(board_object, nsols):
     square_size = 40
     margin = 4
-    filename = f"w{args.width}sol{nsols}.svg"
+    filename = f"w{board_object.width}sol{nsols}.svg"
     drawing = Drawing(filename)
     colors = [
         "blueviolet",
@@ -213,7 +215,7 @@ def output_to_svg(board_object, nsols):
 
     for piece_index, loc in board_object.solution:
         polygons = []
-        for square_loc in [0]+ board_object.shapes[piece_index][1:]:
+        for square_loc in [0] + board_object.shapes[piece_index][1:]:
             board_loc = loc + square_loc
             row, col = board_object.board_index_to_row_col(board_loc)
             rect_points = []
@@ -236,15 +238,16 @@ def output_to_svg(board_object, nsols):
                 problem.addConstraint(lambda x, y: x != y, (i, j))
     # there should always be at least one solution
     coloring_solution = problem.getSolution()
-    for i,piece in enumerate(pieces):
+    for i, piece in enumerate(pieces):
         if isinstance(piece, MultiPolygon):
-            raise ValueError(f"bad solution! {board_object.solution}, a piece was probably placed off the edge of the board")
+            raise ValueError(
+                f"bad solution! {board_object.solution}, a piece was probably placed off the edge of the board")
         piece_points = piece.buffer(-margin).exterior.coords
         d = f"M {piece_points[0][0]} {piece_points[0][1]} "
         for x, y in piece_points[1:]:
             d += f"L {x} {y} "
         shape_index = board_object.solution[i][0]
-        id = f"{shape_index}_{shapes[shape_index][0]}"
+        id = f"{shape_index}_{board_object.shapes[shape_index][0]}"
         drawing.add(Path(d=d, fill=colors[int(coloring_solution[i])], id=id))
 
     drawing.save(pretty=2)
