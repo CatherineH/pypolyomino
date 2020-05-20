@@ -17,8 +17,7 @@ heptominos = [[0, 1, 8, 9, 10, 11, 7],
               [7, 7, 8, 15, 16, 24, 32]
               ]
 
-target_sol = [2,1,2,1,2,1,3,4,7,3,0,3,0,3]
-
+target_sol = [2, 1, 2, 1, 2, 1, 3, 4, 4, 7, 3, 0, 3, 0, 3, 7, 0, 2, 1, 2, 1, 6, 5, 7]
 
 start_time = time()
 number_placed = 0
@@ -35,9 +34,9 @@ class HeptominoBoard(Board):
         if piece == 0:
             row, col = self.board_index_to_row_col(loc)
             left_index = self.board_row_col_to_index(row, col - 2)
-            upper_index = self.board_row_col_to_index(row+1, col - 3)
-            right_index = self.board_row_col_to_index(row+2, col-2)
-            hole_index = self.board_row_col_to_index(row+1, col-2)
+            upper_index = self.board_row_col_to_index(row + 1, col - 3)
+            right_index = self.board_row_col_to_index(row + 2, col - 2)
+            hole_index = self.board_row_col_to_index(row + 1, col - 2)
             if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
                     (self.board[right_index] is not None) and (self.board[hole_index] is None):
                 return 0
@@ -68,8 +67,8 @@ class HeptominoBoard(Board):
                 return 0
         elif piece == 5:
             row, col = self.board_index_to_row_col(loc)
-            left_index = self.board_row_col_to_index(row, col+1)
-            upper_index = self.board_row_col_to_index(row+1, col+2)
+            left_index = self.board_row_col_to_index(row, col + 1)
+            upper_index = self.board_row_col_to_index(row + 1, col + 2)
             hole_index = self.board_row_col_to_index(row + 1, col + 1)
             if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
                     (self.board[hole_index] is None):
@@ -79,39 +78,40 @@ class HeptominoBoard(Board):
             if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
                     (self.board[hole_index] is None) and (self.board[hole_index2] is None):
                 return 0
-            left_index = self.board_row_col_to_index(row-1, col)
+            left_index = self.board_row_col_to_index(row - 1, col)
             right_index = self.board_row_col_to_index(row - 2, col)
-            upper_index = self.board_row_col_to_index(row - 3, col+1)
-            hole_index = self.board_row_col_to_index(row+1, col-1)
+            upper_index = self.board_row_col_to_index(row - 3, col + 1)
+            hole_index = self.board_row_col_to_index(row + 1, col - 1)
             hole_index2 = self.board_row_col_to_index(row + 1, col - 2)
             if (self.board[left_index] is not None) and (self.board[right_index] is not None) and \
-                    (self.board[upper_index] is not None) and (self.board[hole_index] is None) and (self.board[hole_index2] is None):
+                    (self.board[upper_index] is not None) and (self.board[hole_index] is None) and (
+                    self.board[hole_index2] is None):
                 return 0
         elif piece == 6:
             row, col = self.board_index_to_row_col(loc)
-            left_index = self.board_row_col_to_index(row, col-1)
-            upper_index = self.board_row_col_to_index(row+1, col-2)
-            hole_index = self.board_row_col_to_index(row+1, col -1)
+            left_index = self.board_row_col_to_index(row, col - 1)
+            upper_index = self.board_row_col_to_index(row + 1, col - 2)
+            hole_index = self.board_row_col_to_index(row + 1, col - 1)
             if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
                     (self.board[hole_index] is None):
                 return 0
             upper_index = self.board_row_col_to_index(row + 1, col - 3)
-            hole_index2 = self.board_row_col_to_index(row+1, col -2 )
+            hole_index2 = self.board_row_col_to_index(row + 1, col - 2)
             if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
                     (self.board[hole_index] is None) and (self.board[hole_index2] is None):
                 return 0
         elif piece == 7:
             row, col = self.board_index_to_row_col(loc)
-            left_index = self.board_row_col_to_index(row, col-2)
-            upper_index = self.board_row_col_to_index(row+1, col-3)
-            right_index = self.board_row_col_to_index(row+2, col-2)
-            hole_index = self.board_row_col_to_index(row +1, col -2)
+            left_index = self.board_row_col_to_index(row, col - 2)
+            upper_index = self.board_row_col_to_index(row + 1, col - 3)
+            right_index = self.board_row_col_to_index(row + 2, col - 2)
+            hole_index = self.board_row_col_to_index(row + 1, col - 2)
             if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
                     (self.board[right_index] is not None) and (self.board[hole_index] is None):
                 return 0
 
         for shape_loc in self.shapes[pattern][1:]:
-            if self.board[loc+shape_loc] is not None:
+            if self.board[loc + shape_loc] is not None:
                 return 0
         # we also want to make sure that the board does not contain any empty islands
         return 1
@@ -146,7 +146,7 @@ def constraint_solution(board_object):
                 for shape_index in range(number_of_pieces):
                     other_parts = []
                     for part, offset in enumerate(shape[1:]):
-                        if (location + offset) >= len(board): # piece is off the board
+                        if (location + offset) >= len(board):  # piece is off the board
                             return 0
 
                         other_parts.append(board[location + offset] == f"piece{shape_index}part{part + 1}")
@@ -173,23 +173,35 @@ def place(board_object, nsols):
                 if board_object.solution[i][0] < target_sol[i]:
                     break
                 i += 1
+            i -= 1
             try:
                 if piece_index == target_sol[i] and len(board_object.solution) == i:
                     print("passing over solution!", board_object.solution, i, piece_index, target_sol[i])
                     sys.exit()
             except IndexError:
-                print("index error", i, board_object.solution, target_sol)
+                print("index error", i, len(board_object.solution), len(target_sol), min(len(board_object.solution), len(target_sol)))
                 sys.exit()
 
             piece_index += 1
             continue
 
-        #if iterations % 1000 == 0:
-        if all(board_object.solution[i][0] == target_sol[i] for i in range(min(len(board_object.solution),len(target_sol)))):
+        if iterations % 10000 == 0:
+            print(len(board_object.solution), [entry[0] for entry in board_object.solution],
+                  [board_object.solution[i][0] <= target_sol[i] for i in
+                   range(min(len(board_object.solution), len(target_sol)))])
+            board_object.print_board()
+        '''
+        if all(board_object.solution[i][0] <= target_sol[i] for i in range(min(len(board_object.solution),len(target_sol)))):
             number_placed = len(board_object.solution)
             print(loc, len(board_object.solution), iterations, time()-start_time, [entry[0] for entry in board_object.solution])
             board_object.print_board()
+        '''
         for i in range(min(len(board_object.solution), len(target_sol))):
+            if board_object.solution[i][0] == target_sol[i] and i == len(board_object.solution) - 1:
+                number_placed = len(board_object.solution)
+                print(loc, len(board_object.solution), iterations, time() - start_time,
+                      [entry[0] for entry in board_object.solution])
+                board_object.print_board()
             if board_object.solution[i][0] < target_sol[i]:
                 break
             if board_object.solution[i][0] > target_sol[i]:
@@ -218,6 +230,8 @@ def place(board_object, nsols):
         board_object.remove_piece_from_board(piece_index, loc)
         piece_index += 1
     return nsols
+
+
 #  place
 
 
@@ -238,6 +252,13 @@ if __name__ == "__main__":
     _board = HeptominoBoard(width, length, heptominos, unique=False)
 
     rebuild_shapes(_board, margin=not args.use_csp)
+    for i, shape in enumerate(target_sol):
+        loc = _board.findloc()
+        if not _board.test(loc, shape):
+            raise ValueError(f"rules prevent placing {shape}!")
+        print(i, shape, _board.test(loc, shape))
+        _board.place_on_board(shape, loc)
+        _board.print_board()
     if args.use_csp:
         print(constraint_solution(_board))
     else:
