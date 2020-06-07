@@ -10,21 +10,25 @@ class Board(object):
     holder object so that global variables do not need to be used
     """
 
-    def __init__(self, width, length, shapes, unique=True):
+    def __init__(self, width, length, shapes, unique=True, margin=True):
         self.shapes = shapes
         # if True, there cannot be more than one copy of a piece on a board
         self.unique = unique
         # add one square of margin for the edges of the board - not sure this is necessary,
         # but it might provide a speedup
         self.width = width
-        self.l1 = length + 1  # bottom margin of 1 cube
-        self.w1 = width + 1  # right margin of 1 cube
-        self.l2 = length + 2
-        self.w2 = width + 2
+        self.margin = margin
+        self.l1 = length + margin  # bottom margin of 1 cube
+        self.w1 = width + margin  # right margin of 1 cube
+        self.l2 = length + 2*margin
+        self.w2 = width + 2*margin
+        self.length = length
         self.board = [None for _ in range(0, self.w2 * self.l2)]
         self.used = [False for _ in range(0, len(set(shape[0] for shape in shapes)))]
         self.solution = []
 
+        if not margin:
+            return
         # mark the edges of the board as unavailable
         for i in range(0, self.w2):
             self.board[i] = -1
@@ -83,8 +87,8 @@ class Board(object):
             return 1
 
     def print_board_locations(self):
-        for col in range(1, self.w1):
-            for row in range(1, self.l1):
+        for col in range(self.margin, self.w1):
+            for row in range(self.margin, self.l1):
                 print(str(self.w2 * row + col) + ",", end="")
             print('')
         print()
@@ -98,8 +102,8 @@ class Board(object):
         return self.w2 * row + col
 
     def print_board(self):
-        for col in range(1, self.w1):
-            for row in range(1, self.l1):
+        for col in range(self.margin, self.w1):
+            for row in range(self.margin, self.l1):
                 piece_num = self.board[self.w2 * row + col]
                 if piece_num is not None and piece_num < 0:
                     raise ValueError(f"got bad character! {piece_num}")
@@ -174,6 +178,15 @@ class Board(object):
                 return 0
         # we also want to make sure that the board does not contain any empty islands
         return 1
+
+    def print_shapes(self):
+        self.print_board_locations()
+        for shape in self.shapes:
+            loc = self.w2+3
+            self.place_on_board(shape[0], loc)
+            print(shape)
+            self.print_board()
+            self.remove_piece_from_board(shape[0], loc)
 
 
 def rebuild_shapes(board_object, margin=True):
