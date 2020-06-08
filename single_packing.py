@@ -27,10 +27,6 @@ hexominos = [[0, 7, 8, 9, 10, 11],
              [7, 8, 16, 24, 25, 32]
              ]
 
-target_sol1 = [2, 1, 2, 1, 2, 1, 3, 4, 4, 7, 3, 0, 3, 0, 3, 7, 0, 2, 1, 2, 1, 6, 5, 7,
-              2,5,1,2,1,2,1,5,3, 0, 3,2,1,7,0,1,2,3,7,2,1,0,3,0,5,7,4,2,1,2,1,2,5,1,
-              5]
-target_sol = []
 start_time = time()
 number_placed = 0
 iterations = 0
@@ -134,7 +130,6 @@ class HexominoBoard(Board):
         for shape_loc in self.shapes[pattern][1:]:
             if self.board[loc + shape_loc] is not None:
                 return 0
-        # we also want to make sure that the board does not contain any empty islands
         return 1
 
 
@@ -143,11 +138,9 @@ class HeptominoBoard(Board):
         super().__init__(width, length, heptominos, unique=True)
 
     def test(self, loc, pattern):
-        piece = self.shapes[pattern][0]
         for shape_loc in self.shapes[pattern][1:]:
             if self.board[loc + shape_loc] is not None:
                 return 0
-        # we also want to make sure that the board does not contain any empty islands
         return 1
 
 
@@ -202,44 +195,8 @@ def place(board_object, nsols):
     iterations += 1
     while (loc := board_object.findloc()) and piece_index < len(board_object.shapes):
         if not board_object.test(loc, piece_index):
-            '''
-            i = 0
-            while i < min(len(board_object.solution), len(target_sol)):
-                if board_object.solution[i][0] < target_sol[i]:
-                    break
-                i += 1
-            i -= 1
-            
-            try:
-                if piece_index == target_sol[i] and len(board_object.solution) == i:
-                    print("passing over solution!", board_object.solution, i, piece_index, target_sol[i])
-                    sys.exit()
-            except IndexError:
-                print("index error", i, len(board_object.solution), len(target_sol), min(len(board_object.solution), len(target_sol)))
-                sys.exit()
-            '''
             piece_index += 1
             continue
-        '''
-        if iterations % 10000 == 0:
-            print(len(board_object.solution), [entry[0] for entry in board_object.solution],
-                  [board_object.solution[i][0] <= target_sol[i] for i in
-                   range(min(len(board_object.solution), len(target_sol)))])
-            board_object.print_board()
-        
-        if all(board_object.solution[i][0] <= target_sol[i] for i in range(min(len(board_object.solution),len(target_sol)))):
-            number_placed = len(board_object.solution)
-            print(loc, len(board_object.solution), iterations, time()-start_time, [entry[0] for entry in board_object.solution])
-            board_object.print_board()
-        '''
-        for i in range(min(len(board_object.solution), len(target_sol))):
-            if board_object.solution[i][0] < target_sol[i]:
-                break
-            if board_object.solution[i][0] > target_sol[i]:
-                print(board_object.solution)
-                board_object.print_board()
-                print("failed to find solution!")
-                sys.exit()
 
         board_object.place_on_board(loc=loc, piece_index=piece_index)
 
@@ -288,11 +245,6 @@ if __name__ == "__main__":
     '''
 
     rebuild_shapes(_board, margin=not args.use_csp)
-    for i, shape in enumerate(target_sol):
-        loc = _board.findloc()
-        if not _board.test(loc, shape):
-            raise ValueError(f"rules prevent placing {shape}!")
-        _board.place_on_board(shape, loc)
     if args.use_csp:
         print(constraint_solution(_board))
     else:

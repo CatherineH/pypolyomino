@@ -20,8 +20,8 @@ class Board(object):
         self.margin = margin
         self.l1 = length + margin  # bottom margin of 1 cube
         self.w1 = width + margin  # right margin of 1 cube
-        self.l2 = length + 2*margin
-        self.w2 = width + 2*margin
+        self.l2 = length + 2 * margin
+        self.w2 = width + 2 * margin
         self.length = length
         self.board = [None for _ in range(0, self.w2 * self.l2)]
         self.used = [False for _ in range(0, len(set(shape[0] for shape in shapes)))]
@@ -42,8 +42,7 @@ class Board(object):
     def wflip(self):
         for i in range(0, self.l2):
             for j in range(0, 3):
-                d = self.board[i * self.w2 + j] - self.board[
-                    i * self.w2 + self.w1 - j]
+                d = self.board[i * self.w2 + j] - self.board[i * self.w2 + self.w1 - j]
                 if not d:
                     continue
                 return d > 0
@@ -51,8 +50,7 @@ class Board(object):
     def lflip(self):
         for i in range(1, self.w2):
             for j in range(1, 8):
-                d = self.board[j * self.w2 + i] - self.board[
-                    (self.l1 - j) * self.w2 + i]
+                d = self.board[j * self.w2 + i] - self.board[(self.l1 - j) * self.w2 + i]
                 if not d:
                     continue
                 return d > 0
@@ -81,8 +79,7 @@ class Board(object):
 
         """
         for i in range(1, self.w1):
-            if self.board[5 * self.w2 + i] == self.board[
-                6 * self.w2 + i]:
+            if self.board[5 * self.w2 + i] == self.board[6 * self.w2 + i]:
                 return 0
             return 1
 
@@ -142,29 +139,22 @@ class Board(object):
         for i in range(self.w2 + 1, self.w2 * self.l1 - 1):
             if self.board[i] is None:
                 row, col = self.board_index_to_row_col(i)
-                neighbors = []
-                # neighbors.append(self.board[self.board_row_col_to_index(row + 1, col-1)])
-                neighbors.append(self.board[self.board_row_col_to_index(row + 1, col)])
-                # neighbors.append(self.board[self.board_row_col_to_index(row + 1, col+1)])
-                # neighbors.append(self.board[self.board_row_col_to_index(row - 1, col-1)])
-                neighbors.append(self.board[self.board_row_col_to_index(row - 1, col)])
-                # neighbors.append(self.board[self.board_row_col_to_index(row - 1, col+1)])
-                neighbors.append(self.board[self.board_row_col_to_index(row, col - 1)])
-                neighbors.append(self.board[self.board_row_col_to_index(row, col + 1)])
+                neighbors = [self.board[self.board_row_col_to_index(row + 1, col)],
+                             self.board[self.board_row_col_to_index(row - 1, col)],
+                             self.board[self.board_row_col_to_index(row, col - 1)],
+                             self.board[self.board_row_col_to_index(row, col + 1)]]
                 if all(neighbors):
-                    # print("has hole", neighbors, row, col)
                     return 0
         return 1
 
     def is_hole(self, loc):
-        if self.board[loc] != None:
+        if self.board[loc] is not None:
             return 1
         row, col = self.board_index_to_row_col(loc)
-        neighbors = []
-        neighbors.append(self.board[self.board_row_col_to_index(row + 1, col)])
-        neighbors.append(self.board[self.board_row_col_to_index(row - 1, col)])
-        neighbors.append(self.board[self.board_row_col_to_index(row, col - 1)])
-        neighbors.append(self.board[self.board_row_col_to_index(row, col + 1)])
+        neighbors = [self.board[self.board_row_col_to_index(row + 1, col)],
+                     self.board[self.board_row_col_to_index(row - 1, col)],
+                     self.board[self.board_row_col_to_index(row, col - 1)],
+                     self.board[self.board_row_col_to_index(row, col + 1)]]
         if all(neighbors):
             return 0
         return 1
@@ -182,7 +172,7 @@ class Board(object):
     def print_shapes(self):
         self.print_board_locations()
         for shape in self.shapes:
-            loc = self.w2+3
+            loc = self.w2 + 3
             self.place_on_board(shape[0], loc)
             print(shape)
             self.print_board()
@@ -231,11 +221,9 @@ def output_to_svg(board_object, nsols):
         for square_loc in [0] + board_object.shapes[piece_index][1:]:
             board_loc = loc + square_loc
             row, col = board_object.board_index_to_row_col(board_loc)
-            rect_points = []
-            rect_points.append((square_size * row, square_size * col))
-            rect_points.append((square_size * (row + 1), square_size * col))
-            rect_points.append((square_size * (row + 1), square_size * (col + 1)))
-            rect_points.append((square_size * row, square_size * (col + 1)))
+            rect_points = [(square_size * row, square_size * col), (square_size * (row + 1), square_size * col),
+                           (square_size * (row + 1), square_size * (col + 1)),
+                           (square_size * row, square_size * (col + 1))]
             polygons.append(Polygon(rect_points))
         polygon = cascaded_union(polygons)
         pieces.append(polygon)
@@ -260,7 +248,7 @@ def output_to_svg(board_object, nsols):
         for x, y in piece_points[1:]:
             d += f"L {x} {y} "
         shape_index = board_object.solution[i][0]
-        id = f"{shape_index}_{board_object.shapes[shape_index][0]}"
-        drawing.add(Path(d=d, fill=colors[int(coloring_solution[i])], id=id))
+        _id = f"{shape_index}_{board_object.shapes[shape_index][0]}"
+        drawing.add(Path(d=d, fill=colors[int(coloring_solution[i])], id=_id))
 
     drawing.save(pretty=2)
