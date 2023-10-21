@@ -179,7 +179,7 @@ class Board(object):
             self.remove_piece_from_board(shape[0], loc)
 
 
-def rebuild_shapes(board_object, margin=True):
+def rebuild_shapes(board_object: Board, margin=True):
     for shape in board_object.shapes:
         for j in range(1, len(shape)):
             k = shape[j]

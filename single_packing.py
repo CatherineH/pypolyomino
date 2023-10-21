@@ -27,10 +27,28 @@ hexominos = [[0, 7, 8, 9, 10, 11],
              [7, 8, 16, 24, 25, 32]
              ]
 
+tetrominos = [[0, 1, 2, 3], #A
+              [1, 1, 8, 9], #B
+              [2, 8, 16, 24], #C
+              [3, 8, 16, 17], #D
+              [4, 8, 16, 15], #E
+              [5, 8, 9, 10], #F
+              [6, 1, 2, 8], #G
+              [7, 8, 9, 17], #H
+              [8, 7, 8, 15], #I
+              [9, 1, 7, 8], #J
+              [10, 1, 9, 10], #K
+              [11, 1, 2, 9], #L
+              [12, 8, 9, 7], #M
+              [13, 8, 9, 16], #N
+              [14, 8, 15, 16] #O
+              ]
+
 start_time = time()
 number_placed = 0
 iterations = 0
-
+best_solution = []
+best_solution_loc = 0
 
 class HexominoBoard(Board):
     def __init__(self, width, length, margin=True):
@@ -135,13 +153,12 @@ class HexominoBoard(Board):
 
 class HeptominoBoard(Board):
     def __init__(self, width, length):
-        super().__init__(width, length, heptominos, unique=True)
+        super().__init__(width, length, heptominos, unique=False)
 
-    def test(self, loc, pattern):
-        for shape_loc in self.shapes[pattern][1:]:
-            if self.board[loc + shape_loc] is not None:
-                return 0
-        return 1
+
+class TetronimoBoard(Board):
+    def __init__(self, width, length):
+        super().__init__(width, length, tetrominos, unique=False)
 
 
 def constraint_solution(board_object):
@@ -189,14 +206,19 @@ def constraint_solution(board_object):
 
 # place a piece in the board; recursive
 def place(board_object, nsols):
-    piece_index = 0
+    piece_index = 3
     global number_placed
     global iterations
+    global best_solution_loc
+    global best_solution
+
     iterations += 1
     while (loc := board_object.findloc()) and piece_index < len(board_object.shapes):
         if not board_object.test(loc, piece_index):
             piece_index += 1
             continue
+        if iterations % 100000 == 0:
+            print(f"{iterations=}")
 
         board_object.place_on_board(loc=loc, piece_index=piece_index)
 
@@ -214,13 +236,17 @@ def place(board_object, nsols):
                 board_object.print_board()
         else:
             nsols = place(board_object, nsols)
+        if best_solution_loc < len(board_object.solution):
+            best_solution = board_object.solution
+            best_solution_loc = len(board_object.solution)
+            board_object.print_board()
+            print(f"new best solution! {best_solution_loc}  {piece_index=} {iterations=}")
         #  remove piece
         board_object.remove_piece_from_board(piece_index, loc)
         piece_index += 1
     return nsols
 
 
-#  place
 
 
 if __name__ == "__main__":
@@ -235,17 +261,24 @@ if __name__ == "__main__":
     parser.add_argument('--csp', dest='use_csp', action='store_true', help='save solution as svg')
 
     args = parser.parse_args()
+    '''
     width = 24
     length = 23
     _board = HexominoBoard(width, length)
-    '''
+    
     width = 26
     length = 21
     _board = HeptominoBoard(width, length)
     '''
+    _board = TetronimoBoard(width=40, length=40)
+
 
     rebuild_shapes(_board, margin=not args.use_csp)
     if args.use_csp:
         print(constraint_solution(_board))
     else:
-        place(_board, nsols=0)
+        place(_board, nsols=1)
+    _board.print_board()
+    #_board.solution = best_solution
+    #_board.print_board()
+    print("done!")
