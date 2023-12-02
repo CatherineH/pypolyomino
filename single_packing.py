@@ -1,150 +1,69 @@
 # pack a single polyomino shape into a rectangle
 import sys
 from argparse import ArgumentParser
+from copy import deepcopy
+from multiprocessing import Pool
 from time import time
 
 from constraint import Problem
 
 from common import Board, rebuild_shapes, output_to_svg
 
-heptominos = [[0, 1, 7, 8, 9, 10, 11],
-              [1, 1, 6, 7, 8, 9, 10],
-              [2, 1, 2, 3, 4, 9, 10],
-              [3, 1, 2, 3, 4, 10, 11],
-              [4, 8, 9, 16, 17, 24, 32],
-              [5, 8, 16, 17, 24, 25, 32],
-              [6, 8, 15, 16, 23, 24, 32],
-              [7, 7, 8, 15, 16, 24, 32]
-              ]
+heptominos = [
+    [0, 1, 7, 8, 9, 10, 11],
+    [1, 1, 6, 7, 8, 9, 10],
+    [2, 1, 2, 3, 4, 9, 10],
+    [3, 1, 2, 3, 4, 10, 11],
+    [4, 8, 9, 16, 17, 24, 32],
+    [5, 8, 16, 17, 24, 25, 32],
+    [6, 8, 15, 16, 23, 24, 32],
+    [7, 7, 8, 15, 16, 24, 32],
+]
 
-hexominos = [[0, 7, 8, 9, 10, 11],
-             [1, 5, 6, 7, 8, 9],
-             [2, 1, 2, 3, 4, 9],
-             [3, 1, 2, 3, 4, 11],
-             [4, 7, 8, 16, 24, 32],
-             [5, 8, 16, 23, 24, 32],
-             [6, 8, 9, 16, 24, 32],
-             [7, 8, 16, 24, 25, 32]
-             ]
+hexominos = [
+    [0, 7, 8, 9, 10, 11],
+    [1, 5, 6, 7, 8, 9],
+    [2, 1, 2, 3, 4, 9],
+    [3, 1, 2, 3, 4, 11],
+    [4, 7, 8, 16, 24, 32],
+    [5, 8, 16, 23, 24, 32],
+    [6, 8, 9, 16, 24, 32],
+    [7, 8, 16, 24, 25, 32],
+]
 
-tetrominos = [[0, 1, 2, 3], #A
-              [1, 1, 8, 9], #B
-              [2, 8, 16, 24], #C
-              [3, 8, 16, 17], #D
-              [4, 8, 16, 15], #E
-              [5, 8, 9, 10], #F
-              [6, 1, 2, 8], #G
-              [7, 8, 9, 17], #H
-              [8, 7, 8, 15], #I
-              [9, 1, 7, 8], #J
-              [10, 1, 9, 10], #K
-              [11, 1, 2, 9], #L
-              [12, 8, 9, 7], #M
-              [13, 8, 9, 16], #N
-              [14, 8, 15, 16] #O
-              ]
+tetrominos = [
+    [0, 1, 2, 3],  # A
+    [1, 1, 8, 9],  # B
+    [2, 8, 16, 24],  # C
+    [3, 8, 16, 17],  # D
+    [4, 8, 16, 15],  # E
+    [5, 8, 9, 10],  # F
+    [6, 1, 2, 8],  # G
+    [7, 8, 9, 17],  # H
+    [8, 7, 8, 15],  # I
+    [9, 1, 7, 8],  # J
+    [10, 1, 9, 10],  # K
+    [11, 1, 2, 9],  # L
+    [12, 8, 9, 7],  # M
+    [13, 8, 9, 16],  # N
+    [14, 8, 15, 16],  # O
+]
 
 start_time = time()
+
 number_placed = 0
 iterations = 0
 best_solution = []
 best_solution_loc = 0
 
+
 class HexominoBoard(Board):
-    def __init__(self, width, length, margin=True):
-        super().__init__(width, length, hexominos, margin=margin, unique=True)
+    def __init__(self, width, length, debug, margin=True):
+        super().__init__(
+            width, length, hexominos, margin=margin, unique=True, debug=debug
+        )
 
     def test(self, loc, pattern):
-        piece = self.shapes[pattern][0]
-        '''
-        try:
-            # don't create a board with a hole
-            if piece == 0:
-                row, col = self.board_index_to_row_col(loc)
-                left_index = self.board_row_col_to_index(row, col - 2)
-                upper_index = self.board_row_col_to_index(row + 1, col - 3)
-                right_index = self.board_row_col_to_index(row + 2, col - 2)
-                hole_index = self.board_row_col_to_index(row + 1, col - 2)
-
-                if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
-                        (self.board[right_index] is not None) and (self.board[hole_index] is None):
-                    return 0
-            elif piece == 2:
-                row, col = self.board_index_to_row_col(loc)
-                upper_index = self.board_row_col_to_index(row + 1, col - 1)
-                right_index = self.board_row_col_to_index(row + 2, col)
-                hole_index = self.board_row_col_to_index(row + 1, col)
-                if (self.board[upper_index] is not None) and (self.board[hole_index] is None) and \
-                        (self.board[right_index] is not None):
-                    return 0
-            elif piece == 3:
-                row, col = self.board_index_to_row_col(loc)
-                left_index = self.board_row_col_to_index(row + 1, col - 1)
-                right_index = self.board_row_col_to_index(row + 2, col)
-                hole_index = self.board_row_col_to_index(row + 1, col)
-                if (self.board[left_index] is not None) and (self.board[hole_index] is None) and \
-                        (self.board[right_index] is not None):
-                    return 0
-            elif piece == 4:
-                row, col = self.board_index_to_row_col(loc)
-                left_index = self.board_row_col_to_index(row, col + 2)
-                right_index = self.board_row_col_to_index(row + 2, col + 2)
-                lower_index = self.board_row_col_to_index(row + 1, col + 3)
-                hole_index = self.board_row_col_to_index(row + 1, col + 2)
-                if (self.board[left_index] is not None) and (self.board[lower_index] is not None) and \
-                        (self.board[right_index] is not None) and (self.board[hole_index] is None):
-                    return 0
-            elif piece == 5:
-                row, col = self.board_index_to_row_col(loc)
-                left_index = self.board_row_col_to_index(row, col + 1)
-                upper_index = self.board_row_col_to_index(row + 1, col + 2)
-                hole_index = self.board_row_col_to_index(row + 1, col + 1)
-                if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
-                        (self.board[hole_index] is None):
-                    return 0
-                upper_index = self.board_row_col_to_index(row + 1, col + 3)
-                hole_index2 = self.board_row_col_to_index(row + 1, col + 2)
-                if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
-                        (self.board[hole_index] is None) and (self.board[hole_index2] is None):
-                    return 0
-                left_index = self.board_row_col_to_index(row - 1, col)
-                right_index = self.board_row_col_to_index(row - 2, col)
-                upper_index = self.board_row_col_to_index(row - 3, col + 1)
-                hole_index = self.board_row_col_to_index(row + 1, col - 1)
-                hole_index2 = self.board_row_col_to_index(row + 1, col - 2)
-                if (self.board[left_index] is not None) and (self.board[right_index] is not None) and \
-                        (self.board[upper_index] is not None) and (self.board[hole_index] is None) and (
-                        self.board[hole_index2] is None):
-                    return 0
-            elif piece == 6:
-                row, col = self.board_index_to_row_col(loc)
-                left_index = self.board_row_col_to_index(row, col - 1)
-                upper_index = self.board_row_col_to_index(row + 1, col - 2)
-                hole_index = self.board_row_col_to_index(row + 1, col - 1)
-                if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
-                        (self.board[hole_index] is None):
-                    return 0
-                upper_index = self.board_row_col_to_index(row + 1, col - 3)
-                hole_index2 = self.board_row_col_to_index(row + 1, col - 2)
-                if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
-                        (self.board[hole_index] is None) and (self.board[hole_index2] is None):
-                    return 0
-            elif piece == 7:
-                row, col = self.board_index_to_row_col(loc)
-                left_index = self.board_row_col_to_index(row, col - 2)
-                upper_index = self.board_row_col_to_index(row + 1, col - 3)
-                right_index = self.board_row_col_to_index(row + 2, col - 2)
-                hole_index = self.board_row_col_to_index(row + 1, col - 2)
-                try:
-                    if (self.board[left_index] is not None) and (self.board[upper_index] is not None) and \
-                            (self.board[right_index] is not None) and (self.board[hole_index] is None):
-                        return 0
-                except IndexError:
-                    pass
-        except IndexError:
-            #print(f"failed testing {piece} at {loc}")
-            pass
-        '''
         for shape_loc in self.shapes[pattern][1:]:
             if self.board[loc + shape_loc] is not None:
                 return 0
@@ -152,8 +71,8 @@ class HexominoBoard(Board):
 
 
 class HeptominoBoard(Board):
-    def __init__(self, width, length):
-        super().__init__(width, length, heptominos, unique=False)
+    def __init__(self, width, length, debug):
+        super().__init__(width, length, heptominos, unique=True, debug=debug)
 
 
 class TetronimoBoard(Board):
@@ -170,7 +89,11 @@ def constraint_solution(board_object):
     # board locations
     variables = [f"row{row}col{col}" for row in range(width) for col in range(length)]
     # pieces
-    values = [f"piece{piece}part{part}" for part in range(7) for piece in range(number_of_pieces)]
+    values = [
+        f"piece{piece}part{part}"
+        for part in range(7)
+        for piece in range(number_of_pieces)
+    ]
     for variable in variables:
         problem.addVariable(variable, values)
     # only one piece per board location
@@ -183,6 +106,7 @@ def constraint_solution(board_object):
     # add constraints for the pieces
 
     for i in range(len(variables)):
+
         def piece_constraint(*args):
             location = i
             board = args[1:]
@@ -194,8 +118,13 @@ def constraint_solution(board_object):
                         if (location + offset) >= len(board):  # piece is off the board
                             return 0
 
-                        other_parts.append(board[location + offset] == f"piece{shape_index}part{part + 1}")
-                    if board[location] == f"piece{shape_index}part0" and all(other_parts):
+                        other_parts.append(
+                            board[location + offset]
+                            == f"piece{shape_index}part{part + 1}"
+                        )
+                    if board[location] == f"piece{shape_index}part0" and all(
+                        other_parts
+                    ):
                         return 1
             return 0
 
@@ -204,9 +133,30 @@ def constraint_solution(board_object):
     return problem.getSolution()
 
 
+def place_piece(board_object, loc, piece_index):
+    if not board_object.test(loc, piece_index):
+        piece_index += 1
+        return board_object, loc, piece_index
+
+    board_object.place_on_board(loc=loc, piece_index=piece_index)
+
+    next_loc = board_object.findloc()
+    if not next_loc:
+        output_to_svg(board_object)
+        #  print solution
+        print(f"solution: {time() - board_object.start_time}")
+    else:
+        return board_object, next_loc, 0
+    #  remove piece
+    board_object.remove_piece_from_board(piece_index, loc)
+    piece_index += 1
+    return board_object, loc, piece_index
+
+
 # place a piece in the board; recursive
 def place(board_object, nsols):
     piece_index = 3
+
     global number_placed
     global iterations
     global best_solution_loc
@@ -222,17 +172,17 @@ def place(board_object, nsols):
 
         board_object.place_on_board(loc=loc, piece_index=piece_index)
 
-        if args.debug:
-            print(f"placing piece [{piece_index}] at square {loc}")  # if the entire board is occupied
+        if board_object.debug:
+            print(
+                f"placing piece [{piece_index}] at square {loc}"
+            )  # if the entire board is occupied
             board_object.print_board()
             print(loc, board_object.solution)
         if not board_object.findloc():
-            nsols += 1
-            if args.svg:
-                output_to_svg(board_object, nsols)
+            output_to_svg(board_object)
             #  print solution
-            if args.dispflag:
-                print(f"solution {nsols}: {time()-start_time}")
+            if board_object.debug:
+                print(f"solution: {time()-board_object.start_time}")
                 board_object.print_board()
         else:
             nsols = place(board_object, nsols)
@@ -240,45 +190,89 @@ def place(board_object, nsols):
             best_solution = board_object.solution
             best_solution_loc = len(board_object.solution)
             board_object.print_board()
-            print(f"new best solution! {best_solution_loc}  {piece_index=} {iterations=}")
+            print(
+                f"new best solution! {best_solution_loc}  {piece_index=} {iterations=}"
+            )
+
         #  remove piece
         board_object.remove_piece_from_board(piece_index, loc)
         piece_index += 1
-    return nsols
-
-
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description='Generate rectangular packings of a single polyomino shape.')
-    parser.add_argument('-d', dest='dispflag', action='store_true', help='print all board solutions')
-    parser.add_argument('-c', dest='countflag', action='store_true',
-                        help='print number of solutions')
-    parser.add_argument('-v', '--verbose', dest='debug', action='store_true',
-                        help='print debugging info')
-    parser.add_argument('-s', dest='svg', action='store_true', help='save solution as svg')
-
-    parser.add_argument('--csp', dest='use_csp', action='store_true', help='save solution as svg')
+    parser = ArgumentParser(
+        description="Generate rectangular packings of a single polyomino shape."
+    )
+    parser.add_argument(
+        "-c", dest="countflag", action="store_true", help="print number of solutions"
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="debug",
+        action="store_true",
+        help="print debugging info",
+    )
+    parser.add_argument(
+        "--csp", dest="use_csp", action="store_true", help="save solution as svg"
+    )
+    parser.add_argument(
+        "--multiprocess",
+        dest="use_multi",
+        action="store_true",
+        help="run multi processes",
+    )
 
     args = parser.parse_args()
-    '''
+    """
     width = 24
     length = 23
-    _board = HexominoBoard(width, length)
-    
+    _board = HexominoBoard(width, length, args.debug)
+    """
     width = 26
     length = 21
-    _board = HeptominoBoard(width, length)
-    '''
-    _board = TetronimoBoard(width=40, length=40)
-
+    _board = HeptominoBoard(width, length, args.debug)
 
     rebuild_shapes(_board, margin=not args.use_csp)
     if args.use_csp:
         print(constraint_solution(_board))
+    elif args.use_multi:
+        # solutions that have already been evaluated
+        evaluated = set()
+        # initial set - all pieces at loc 0
+        start_loc = _board.findloc()
+        to_evaluate = [
+            (deepcopy(_board), start_loc, piece_index)
+            for piece_index in range(len(_board.shapes))
+        ]
+        num_processes = 4
+        pool = Pool(processes=num_processes)
+        while to_evaluate:
+            eval_set = []
+            for _ in range(num_processes):
+                if to_evaluate:
+                    eval_set.append(to_evaluate.pop())
+            multiple_results = []
+            for eval_args in eval_set:
+                board_hash = eval_args[0].hash(eval_args[2])
+                evaluated.add(board_hash)
+                multiple_results.append(pool.apply_async(place_piece, eval_args))
+            for res in multiple_results:
+                result = res.get(timeout=60)
+                next_solution_hash = result[0].hash((result[2]))
+                if next_solution_hash in evaluated:
+                    continue
+                if result[2] >= len(result[0].shapes):
+                    continue
+                if result[2] == 0:
+                    to_evaluate += [
+                        (deepcopy(result[0]), result[1], piece_index)
+                        for piece_index in range(len(result[0].shapes))
+                    ]
+                    continue
+                to_evaluate.append(result)
     else:
         place(_board, nsols=1)
     _board.print_board()
-    #_board.solution = best_solution
-    #_board.print_board()
+
     print("done!")

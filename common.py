@@ -1,3 +1,5 @@
+from time import time
+
 from constraint import Problem
 from shapely.geometry import Polygon, MultiPolygon
 from shapely.ops import cascaded_union
@@ -10,7 +12,7 @@ class Board(object):
     holder object so that global variables do not need to be used
     """
 
-    def __init__(self, width, length, shapes, unique=True, margin=True):
+    def __init__(self, width, length, shapes, unique=True, margin=True, debug=False):
         self.shapes = shapes
         # if True, there cannot be more than one copy of a piece on a board
         self.unique = unique
@@ -26,6 +28,8 @@ class Board(object):
         self.board = [None for _ in range(0, self.w2 * self.l2)]
         self.used = [False for _ in range(0, len(set(shape[0] for shape in shapes)))]
         self.solution = []
+        self.start_time = time()
+        self.debug = debug
 
         if not margin:
             return
@@ -50,7 +54,10 @@ class Board(object):
     def lflip(self):
         for i in range(1, self.w2):
             for j in range(1, 8):
-                d = self.board[j * self.w2 + i] - self.board[(self.l1 - j) * self.w2 + i]
+                d = (
+                    self.board[j * self.w2 + i]
+                    - self.board[(self.l1 - j) * self.w2 + i]
+                )
                 if not d:
                     continue
                 return d > 0
@@ -63,19 +70,19 @@ class Board(object):
         while the bottom can be reflected or rotated, thus 8 combinations.
         There are really only 2 split solutions as follows.
 
-        	EEEIIBJJJJ
-        	EAEIIBGJHH
-        	AAALIBGGGH
-        	CALLLBDFGH
-        	CKKKLBDFFH
-        	CCCKKDDDFF
+                EEEIIBJJJJ
+                EAEIIBGJHH
+                AAALIBGGGH
+                CALLLBDFGH
+                CKKKLBDFFH
+                CCCKKDDDFF
 
-        	EEEIIBJJJJ
-        	EAEIIBGJHH
-        	AAAKIBGGGH
-        	CALKKBDFGH
-        	CLLLKBDFFH
-        	CCCLKDDDFF
+                EEEIIBJJJJ
+                EAEIIBGJHH
+                AAAKIBGGGH
+                CALKKBDFGH
+                CLLLKBDFFH
+                CCCLKDDDFF
 
         """
         for i in range(1, self.w1):
@@ -87,7 +94,7 @@ class Board(object):
         for col in range(self.margin, self.w1):
             for row in range(self.margin, self.l1):
                 print(str(self.w2 * row + col) + ",", end="")
-            print('')
+            print("")
         print()
 
     def board_index_to_row_col(self, board_index):
@@ -104,9 +111,9 @@ class Board(object):
                 piece_num = self.board[self.w2 * row + col]
                 if piece_num is not None and piece_num < 0:
                     raise ValueError(f"got bad character! {piece_num}")
-                _char = chr(piece_num + ord('A')) if piece_num is not None else '-'
+                _char = chr(piece_num + ord("A")) if piece_num is not None else "-"
                 print(_char, end="")
-            print('')
+            print("")
         print()
 
     def place_on_board(self, piece_index, loc):
@@ -139,10 +146,12 @@ class Board(object):
         for i in range(self.w2 + 1, self.w2 * self.l1 - 1):
             if self.board[i] is None:
                 row, col = self.board_index_to_row_col(i)
-                neighbors = [self.board[self.board_row_col_to_index(row + 1, col)],
-                             self.board[self.board_row_col_to_index(row - 1, col)],
-                             self.board[self.board_row_col_to_index(row, col - 1)],
-                             self.board[self.board_row_col_to_index(row, col + 1)]]
+                neighbors = [
+                    self.board[self.board_row_col_to_index(row + 1, col)],
+                    self.board[self.board_row_col_to_index(row - 1, col)],
+                    self.board[self.board_row_col_to_index(row, col - 1)],
+                    self.board[self.board_row_col_to_index(row, col + 1)],
+                ]
                 if all(neighbors):
                     return 0
         return 1
@@ -151,10 +160,12 @@ class Board(object):
         if self.board[loc] is not None:
             return 1
         row, col = self.board_index_to_row_col(loc)
-        neighbors = [self.board[self.board_row_col_to_index(row + 1, col)],
-                     self.board[self.board_row_col_to_index(row - 1, col)],
-                     self.board[self.board_row_col_to_index(row, col - 1)],
-                     self.board[self.board_row_col_to_index(row, col + 1)]]
+        neighbors = [
+            self.board[self.board_row_col_to_index(row + 1, col)],
+            self.board[self.board_row_col_to_index(row - 1, col)],
+            self.board[self.board_row_col_to_index(row, col - 1)],
+            self.board[self.board_row_col_to_index(row, col + 1)],
+        ]
         if all(neighbors):
             return 0
         return 1
@@ -178,6 +189,15 @@ class Board(object):
             self.print_board()
             self.remove_piece_from_board(shape[0], loc)
 
+    def hash(self, next_piece=None, next_loc=None):
+        solution = (
+            self.solution + [(next_piece, next_loc)]
+            if next_piece is not None
+            else self.solution
+        )
+
+        return hash(",".join(str(piece_type) for piece_type, _ in solution))
+
 
 def rebuild_shapes(board_object: Board, margin=True):
     for shape in board_object.shapes:
@@ -193,10 +213,10 @@ def rebuild_shapes(board_object: Board, margin=True):
             shape[j] = k
 
 
-def output_to_svg(board_object, nsols):
+def output_to_svg(board_object):
     square_size = 40
     margin = 4
-    filename = f"w{board_object.width}sol{nsols}.svg"
+    filename = f"{board_object.name}w{board_object.width}_{board_object.hash()}.svg"
     drawing = Drawing(filename)
     colors = [
         "blueviolet",
@@ -212,7 +232,7 @@ def output_to_svg(board_object, nsols):
         "cyan",
         "darkblue",
         "darkcyan",
-        "darkgoldenrod"
+        "darkgoldenrod",
     ]
     pieces = []
 
@@ -221,9 +241,12 @@ def output_to_svg(board_object, nsols):
         for square_loc in [0] + board_object.shapes[piece_index][1:]:
             board_loc = loc + square_loc
             row, col = board_object.board_index_to_row_col(board_loc)
-            rect_points = [(square_size * row, square_size * col), (square_size * (row + 1), square_size * col),
-                           (square_size * (row + 1), square_size * (col + 1)),
-                           (square_size * row, square_size * (col + 1))]
+            rect_points = [
+                (square_size * row, square_size * col),
+                (square_size * (row + 1), square_size * col),
+                (square_size * (row + 1), square_size * (col + 1)),
+                (square_size * row, square_size * (col + 1)),
+            ]
             polygons.append(Polygon(rect_points))
         polygon = cascaded_union(polygons)
         pieces.append(polygon)
@@ -242,7 +265,8 @@ def output_to_svg(board_object, nsols):
     for i, piece in enumerate(pieces):
         if isinstance(piece, MultiPolygon):
             raise ValueError(
-                f"bad solution! {board_object.solution}, a piece was probably placed off the edge of the board")
+                f"bad solution! {board_object.solution}, a piece was probably placed off the edge of the board"
+            )
         piece_points = piece.buffer(-margin).exterior.coords
         d = f"M {piece_points[0][0]} {piece_points[0][1]} "
         for x, y in piece_points[1:]:
