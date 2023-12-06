@@ -222,6 +222,13 @@ if __name__ == "__main__":
         action="store_true",
         help="run multi processes",
     )
+    parser.add_argument(
+        "--from-string",
+        dest="from_string",
+        type=str,
+        default="",
+        help="run multi processes",
+    )
 
     args = parser.parse_args()
     """
@@ -229,6 +236,16 @@ if __name__ == "__main__":
     length = 23
     _board = HexominoBoard(width, length, args.debug)
     """
+    if args.from_string:
+        _board = Board.from_str(
+            args.from_string.split(",")[2],
+            int(args.from_string.split(",")[0]),
+            int(args.from_string.split(",")[1]),
+            tetrominos,
+        )
+        _board.name="tetrominos"
+        output_to_svg(_board)
+        sys.exit()
     width = 26
     length = 21
     _board = HeptominoBoard(width, length, args.debug)

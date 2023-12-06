@@ -1,4 +1,5 @@
 from time import time
+from typing import List
 
 from constraint import Problem
 from shapely.geometry import Polygon, MultiPolygon
@@ -197,6 +198,17 @@ class Board(object):
         )
 
         return hash(",".join(str(piece_type) for piece_type, _ in solution))
+
+    @staticmethod
+    def from_str(input_str: str, width: int, length: int, shapes: List[List[int]]):
+        print(f"input_str:{input_str}, width:{width}, length:{length}, pieces:{shapes}")
+        _board = Board(width=width, length=length, shapes=shapes)
+        rebuild_shapes(_board)
+        for char in input_str:
+            piece_num = ord(char) - ord("A")
+            loc = _board.findloc()
+            _board.place_on_board(piece_num, loc)
+        return _board
 
 
 def rebuild_shapes(board_object: Board, margin=True):
