@@ -1,5 +1,6 @@
 # pack a single polyomino shape into a rectangle
 import sys
+import os
 from argparse import ArgumentParser
 from copy import deepcopy
 from multiprocessing import Pool
@@ -48,6 +49,7 @@ tetrominos = [
     [13, 8, 9, 16],  # N
     [14, 8, 15, 16],  # O
 ]
+
 
 start_time = time()
 
@@ -227,8 +229,9 @@ if __name__ == "__main__":
         dest="from_string",
         type=str,
         default="",
-        help="run multi processes",
+        help="plot a ",
     )
+    parser.add_argument('--plot-filename', dest="plot_filename", type=str, default="")
 
     args = parser.parse_args()
     """
@@ -246,6 +249,22 @@ if __name__ == "__main__":
         _board.name="tetrominos"
         output_to_svg(_board)
         sys.exit()
+    if args.plot_filename:
+        filename = os.path.splitext(args.plot_filename)[0]
+        print(filename)
+        width = filename.split("_")[-2]
+        length = filename.split("_")[-1]
+
+
+        with open(args.plot_filename, "r") as fh:
+            for i, line in enumerate(fh.readlines()):
+                pattern = line.split(",")[-1]
+                _board = Board.from_str(pattern, int(width), int(length), tetrominos)
+                _board.name = f"tetrominos{i}"
+                _board.print_board()
+                output_to_svg(_board, multicolor=False)
+        sys.exit()
+
     width = 26
     length = 21
     _board = HeptominoBoard(width, length, args.debug)

@@ -118,6 +118,8 @@ class Board(object):
         print()
 
     def place_on_board(self, piece_index, loc):
+        if piece_index >= len(self.shapes) or piece_index < 0:
+            print(f"error: {piece_index} in {len(self.shapes)}")
         piece = self.shapes[piece_index][0]
         self.used[piece] = True
 
@@ -201,8 +203,9 @@ class Board(object):
 
     @staticmethod
     def from_str(input_str: str, width: int, length: int, shapes: List[List[int]]):
+        input_str = input_str.strip()
         print(f"input_str:{input_str}, width:{width}, length:{length}, pieces:{shapes}")
-        _board = Board(width=width, length=length, shapes=shapes)
+        _board = Board(width=width, length=length, shapes=shapes, margin=False)
         rebuild_shapes(_board)
         for char in input_str:
             piece_num = ord(char) - ord("A")
@@ -225,7 +228,7 @@ def rebuild_shapes(board_object: Board, margin=True):
             shape[j] = k
 
 
-def output_to_svg(board_object):
+def output_to_svg(board_object, multicolor=True):
     square_size = 40
     margin = 4
     filename = f"{board_object.name}w{board_object.width}_{board_object.hash()}.svg"
@@ -262,23 +265,30 @@ def output_to_svg(board_object):
             polygons.append(Polygon(rect_points))
         polygon = cascaded_union(polygons)
         pieces.append(polygon)
-
-    # get a coloring for the shapes solving the four color problem as a CSP
-    problem = Problem()
-    for i in range(len(pieces)):
-        problem.addVariable(i, [0, 1, 2, 3])
-        for j in range(len(pieces)):
-            if i == j:
-                continue
-            if pieces[i].intersects(pieces[j]):
-                problem.addConstraint(lambda x, y: x != y, (i, j))
-    # there should always be at least one solution
-    coloring_solution = problem.getSolution()
+    if multicolor:
+        # get a coloring for the shapes solving the four color problem as a CSP
+        problem = Problem()
+        for i in range(len(pieces)):
+            problem.addVariable(i, [0, 1, 2, 3])
+            for j in range(len(pieces)):
+                if i == j:
+                    continue
+                if pieces[i].intersects(pieces[j]):
+                    problem.addConstraint(lambda x, y: x != y, (i, j))
+        # there should always be at least one solution
+        coloring_solution = problem.getSolution()
+    else:
+        coloring_solution = [0 for _ in range(len(pieces))]
     for i, piece in enumerate(pieces):
+        
         if isinstance(piece, MultiPolygon):
+            """
             raise ValueError(
                 f"bad solution! {board_object.solution}, a piece was probably placed off the edge of the board"
             )
+            """
+            continue
+        
         piece_points = piece.buffer(-margin).exterior.coords
         d = f"M {piece_points[0][0]} {piece_points[0][1]} "
         for x, y in piece_points[1:]:
