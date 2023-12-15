@@ -17,6 +17,7 @@ class Board(object):
         self.shapes = shapes
         # if True, there cannot be more than one copy of a piece on a board
         self.unique = unique
+
         # add one square of margin for the edges of the board - not sure this is necessary,
         # but it might provide a speedup
         self.width = width
@@ -145,6 +146,15 @@ class Board(object):
                 return i
         return None
 
+    def findloc_rotated(self):
+        for col in range(self.margin, self.w1):
+            for row in range(self.margin, self.l1):
+                loc = self.board_row_col_to_index(row, col)
+                if self.board[loc] is None:
+                    return loc
+
+        return None
+
     def board_has_holes(self):
         for i in range(self.w2 + 1, self.w2 * self.l1 - 1):
             if self.board[i] is None:
@@ -188,7 +198,6 @@ class Board(object):
         for shape in self.shapes:
             loc = self.w2 + 3
             self.place_on_board(shape[0], loc)
-            print(shape)
             self.print_board()
             self.remove_piece_from_board(shape[0], loc)
 
@@ -204,25 +213,24 @@ class Board(object):
     @staticmethod
     def from_str(input_str: str, width: int, length: int, shapes: List[List[int]]):
         input_str = input_str.strip()
-        print(f"input_str:{input_str}, width:{width}, length:{length}, pieces:{shapes}")
-        _board = Board(width=width, length=length, shapes=shapes, margin=False)
+        _board = Board(width=width, length=length, shapes=shapes, margin=True)
         rebuild_shapes(_board)
         for char in input_str:
             piece_num = ord(char) - ord("A")
-            loc = _board.findloc()
+            loc = _board.findloc_rotated()
             _board.place_on_board(piece_num, loc)
         return _board
 
 
-def rebuild_shapes(board_object: Board, margin=True):
+def rebuild_shapes(board_object: Board):
     for shape in board_object.shapes:
         for j in range(1, len(shape)):
             k = shape[j]
-            if margin:
+            if board_object.margin:
                 k += 3
             row = int(k / 8)
             col = k % 8
-            if margin:
+            if board_object.margin:
                 col -= 3
             k = board_object.w2 * row + col
             shape[j] = k
@@ -280,15 +288,11 @@ def output_to_svg(board_object, multicolor=True):
     else:
         coloring_solution = [0 for _ in range(len(pieces))]
     for i, piece in enumerate(pieces):
-        
         if isinstance(piece, MultiPolygon):
-            """
             raise ValueError(
                 f"bad solution! {board_object.solution}, a piece was probably placed off the edge of the board"
             )
-            """
-            continue
-        
+
         piece_points = piece.buffer(-margin).exterior.coords
         d = f"M {piece_points[0][0]} {piece_points[0][1]} "
         for x, y in piece_points[1:]:

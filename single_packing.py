@@ -231,7 +231,7 @@ if __name__ == "__main__":
         default="",
         help="plot a ",
     )
-    parser.add_argument('--plot-filename', dest="plot_filename", type=str, default="")
+    parser.add_argument("--plot-filename", dest="plot_filename", type=str, default="")
 
     args = parser.parse_args()
     """
@@ -246,15 +246,15 @@ if __name__ == "__main__":
             int(args.from_string.split(",")[1]),
             tetrominos,
         )
-        _board.name="tetrominos"
-        output_to_svg(_board)
+        _board.name = "tetrominos"
+        _board.print_board()
+        output_to_svg(_board, False)
         sys.exit()
     if args.plot_filename:
         filename = os.path.splitext(args.plot_filename)[0]
         print(filename)
         width = filename.split("_")[-2]
         length = filename.split("_")[-1]
-
 
         with open(args.plot_filename, "r") as fh:
             for i, line in enumerate(fh.readlines()):
